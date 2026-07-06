@@ -360,9 +360,30 @@
 
   </div>
 
-  <script>
-    let countdownInterval;
+  <script type="module">
+    // Import dei moduli SDK di Firebase necessari
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-app.js";
+    import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-analytics.js";
+    import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-database.js";
 
+    // Configurazione dell'app Firebase
+    const firebaseConfig = {
+      apiKey: "AIzaSyBXt2kDZD8ydWPRBSM9v5XK759Et0FjewY",
+      authDomain: "media-e-proiezione-laurea.firebaseapp.com",
+      databaseURL: "https://media-e-proiezione-laurea-default-rtdb.europe-west1.firebasedatabase.app",
+      projectId: "media-e-proiezione-laurea",
+      storageBucket: "media-e-proiezione-laurea.firebasestorage.app",
+      messagingSenderId: "887459538992",
+      appId: "1:887459538992:web:701a8a3c69e232ac0a25f5",
+      measurementId: "G-NL3G9DCY8F"
+    };
+
+    // Inizializzazione di Firebase
+    const app = initializeApp(firebaseConfig);
+    const analytics = getAnalytics(app);
+    const db = getDatabase(app);
+
+    // Riferimenti agli elementi della pagina
     const setupForm = document.getElementById('setup-form');
     const countdownDisplay = document.getElementById('countdown-display');
     const finalMessage = document.getElementById('final-message');
@@ -383,29 +404,43 @@
     const valMinutes = document.getElementById('val-minutes');
     const valSeconds = document.getElementById('val-seconds');
 
-    function init() {
-      const savedName = localStorage.getItem('deadline_name');
-      const savedDate = localStorage.getItem('deadline_date');
+    let countdownInterval;
+    let currentDbData = null;
+    let isEditing = false;
 
-      if (savedName && savedDate) {
-        startCountdown(savedName, savedDate);
-      } else {
-        showForm(false);
-      }
+    // Inizializzazione della sincronizzazione con il Database di Firebase
+    function initFirebaseSync() {
+      const datiEsameRef = ref(db, "datiEsame");
+      
+      onValue(datiEsameRef, (snapshot) => {
+        currentDbData = snapshot.val();
+        
+        // Se non stiamo modificando attivamente i dati nei campi input, aggiorna lo stato visivo
+        if (!isEditing) {
+          if (currentDbData && currentDbData.name && currentDbData.date) {
+            startCountdown(currentDbData.name, currentDbData.date);
+          } else {
+            showForm(false);
+          }
+        }
+      });
     }
 
     function showForm(canCancel = false) {
+      isEditing = true;
       setupForm.classList.remove('hidden');
       countdownDisplay.classList.add('hidden');
       finalMessage.classList.add('hidden');
 
-      const savedName = localStorage.getItem('deadline_name');
-      const savedDate = localStorage.getItem('deadline_date');
+      if (currentDbData) {
+        if (currentDbData.name) inputName.value = currentDbData.name;
+        if (currentDbData.date) inputDate.value = currentDbData.date;
+      } else {
+        inputName.value = "";
+        inputDate.value = "";
+      }
 
-      if (savedName) inputName.value = savedName;
-      if (savedDate) inputDate.value = savedDate;
-
-      if (canCancel && savedName && savedDate) {
+      if (canCancel && currentDbData && currentDbData.name && currentDbData.date) {
         cancelBtn.classList.remove('hidden');
       } else {
         cancelBtn.classList.add('hidden');
@@ -413,6 +448,7 @@
     }
 
     function startCountdown(name, dateStr) {
+      isEditing = false;
       setupForm.classList.add('hidden');
       finalMessage.classList.add('hidden');
       countdownDisplay.classList.remove('hidden');
@@ -456,29 +492,34 @@
     }
 
     function showFinalMessage(name) {
+      isEditing = false;
       countdownDisplay.classList.add('hidden');
       setupForm.classList.add('hidden');
       finalMessage.classList.remove('hidden');
       finalTitle.textContent = name;
     }
 
+    // Salvataggio sul Database Online
     saveBtn.addEventListener('click', () => {
       const name = inputName.value.trim();
       const date = inputDate.value;
 
       if (!name || !date) return;
 
-      localStorage.setItem('deadline_name', name);
-      localStorage.setItem('deadline_date', date);
-
-      startCountdown(name, date);
+      set(ref(db, "datiEsame"), {
+        name: name,
+        date: date
+      }).then(() => {
+        isEditing = false;
+      }).catch((error) => {
+        console.error("Errore di scrittura nel database:", error);
+      });
     });
 
     cancelBtn.addEventListener('click', () => {
-      const savedName = localStorage.getItem('deadline_name');
-      const savedDate = localStorage.getItem('deadline_date');
-      if (savedName && savedDate) {
-        startCountdown(savedName, savedDate);
+      isEditing = false;
+      if (currentDbData && currentDbData.name && currentDbData.date) {
+        startCountdown(currentDbData.name, currentDbData.date);
       }
     });
 
@@ -486,11 +527,17 @@
       showForm(true);
     });
 
+    // Reset dati sia locali che sul Database Online
     resetBtn.addEventListener('click', () => {
-      showForm(false);
+      set(ref(db, "datiEsame"), null).then(() => {
+        showForm(false);
+      }).catch((error) => {
+        console.error("Errore durante il reset del database:", error);
+      });
     });
 
-    init();
+    // Avvia la sincronizzazione in tempo reale
+    initFirebaseSync();
   </script>
 </body>
 </html>
