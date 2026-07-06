@@ -4,6 +4,11 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Notion Deadline Countdown</title>
+  
+  <!-- Firebase Compat SDKs via CDN -->
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
+
   <style>
     * {
       box-sizing: border-box;
@@ -77,6 +82,13 @@
       border-color: #00F0FF;
       box-shadow: 0 0 8px rgba(0, 240, 255, 0.3);
     }
+    
+    /* Invert calendar picker icon color from black to white */
+    input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+      filter: invert(1);
+      cursor: pointer;
+    }
+
     #save-btn {
       background: linear-gradient(135deg, #9D4EDD, #00F0FF);
       border: none;
@@ -262,10 +274,8 @@
     </div>
   </div>
 
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-app.js";
-    import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-database.js";
-
+  <script>
+    // Configurazione Firebase
     const firebaseConfig = {
       apiKey: "AIzaSyBXt2kDZD8ydWPRBSM9v5XK759Et0FjewY",
       authDomain: "media-e-proiezione-laurea.firebaseapp.com",
@@ -276,29 +286,19 @@
       appId: "1:887459538992:web:aede57f769957e500a25f5"
     };
 
-    // Initialize Firebase
-    const app = initializeApp(firebaseConfig);
-    const db = getDatabase(app);
+    // Inizializzazione Firebase
+    firebase.initializeApp(firebaseConfig);
+    const database = firebase.database();
+    
+    // Riferimento condiviso per sincronizzare lo stesso account su più dispositivi
+    const dbRef = database.ref("datiEsame");
 
-    // Identify current widget instance to isolate data persistence
-    const urlParams = new URLSearchParams(window.location.search);
-    let widgetId = urlParams.get('id');
-    if (!widgetId) {
-      widgetId = localStorage.getItem('notion_countdown_id');
-      if (!widgetId) {
-        widgetId = 'widget_' + Math.random().toString(36).substr(2, 9);
-        localStorage.setItem('notion_countdown_id', widgetId);
-      }
-    }
-
-    const dbRef = ref(db, 'widgets/' + widgetId);
-
-    // App variables
+    // Variabili dell'applicazione
     let currentEventName = '';
     let currentTargetDate = '';
     let countdownInterval = null;
 
-    // View switch helper
+    // Gestione visibilità sezioni
     function showSection(id) {
       document.getElementById('loading').classList.add('hidden');
       document.getElementById('setup-form').classList.add('hidden');
@@ -307,8 +307,8 @@
       document.getElementById(id).classList.remove('hidden');
     }
 
-    // Sync from database
-    onValue(dbRef, (snapshot) => {
+    // Lettura e sincronizzazione dati in tempo reale tra tutti i dispositivi
+    dbRef.on("value", (snapshot) => {
       const data = snapshot.val();
       if (data && data.eventName && data.targetDate) {
         currentEventName = data.eventName;
@@ -318,11 +318,11 @@
         showSetupForm();
       }
     }, (error) => {
-      console.error("Errore di sincronizzazione Database:", error);
+      console.error("Errore di sincronizzazione:", error);
       showSetupForm();
     });
 
-    // Save logic
+    // Scrittura dei dati su Firebase al salvataggio
     document.getElementById('save-btn').addEventListener('click', () => {
       const name = document.getElementById('event-name').value.trim();
       const date = document.getElementById('event-date').value;
@@ -332,14 +332,14 @@
         return;
       }
 
-      set(dbRef, {
+      dbRef.set({
         eventName: name,
         targetDate: date,
         updatedAt: Date.now()
       }).catch((err) => console.error("Salvataggio fallito:", err));
     });
 
-    // Edit logic
+    // Gestione modifica dati
     const handleEdit = () => {
       document.getElementById('event-name').value = currentEventName;
       document.getElementById('event-date').value = currentTargetDate;
@@ -355,14 +355,14 @@
       showSection('setup-form');
     }
 
-    // Countdown active execution
+    // Gestione ed esecuzione del timer countdown
     function startCountdown() {
       if (countdownInterval) clearInterval(countdownInterval);
       showSection('countdown-display');
       document.getElementById('display-name').textContent = currentEventName;
 
       const targetTime = new Date(currentTargetDate).getTime();
-      // Assume semester duration of 90 days for progress scaling
+      // Finestra temporale fissa di 90 giorni per la scala di progressione
       const durationWindow = 90 * 24 * 60 * 60 * 1000; 
 
       function updateTimer() {
@@ -385,7 +385,7 @@
         document.getElementById('minutes').textContent = String(minutes).padStart(2, '0');
         document.getElementById('seconds').textContent = String(seconds).padStart(2, '0');
 
-        // Progress Calculation
+        // Calcolo percentuale barra di avanzamento
         let elapsed = durationWindow - difference;
         let progressPercent = (elapsed / durationWindow) * 100;
         progressPercent = Math.max(0, Math.min(100, progressPercent));
