@@ -1,400 +1,400 @@
 <!DOCTYPE html>
 <html lang="it">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Notion Deadline Countdown</title>
-  
-  <!-- Firebase Compat SDKs via CDN -->
-  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Notion Deadline Countdown</title>
 
-  <style>
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
-    body {
-      background-color: #000000;
-      color: #ffffff;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      min-height: 100vh;
-      overflow: hidden;
-      padding: 10px;
-    }
-    #app {
-      width: 100%;
-      max-width: 480px;
-      text-align: center;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-    }
-    .hidden {
-      display: none !important;
-    }
-    #setup-form, #countdown-display, #final-message, #loading {
-      animation: fadeIn 0.4s ease-in-out;
-      width: 100%;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-    }
-    @keyframes fadeIn {
-      from { opacity: 0; transform: scale(0.98); }
-      to { opacity: 1; transform: scale(1); }
-    }
+<!-- Firebase Compat SDKs via CDN -->
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
 
-    /* Setup Form Styles */
-    #setup-form h2 {
-      font-size: 1.1rem;
-      font-weight: 500;
-      color: #9D4EDD;
-      margin-bottom: 15px;
-      letter-spacing: 0.5px;
-    }
-    .input-group {
-      width: 100%;
-      max-width: 300px;
-      margin-bottom: 12px;
-    }
-    input[type="text"], input[type="datetime-local"] {
-      width: 100%;
-      background: #0a0a0a;
-      border: 1px solid #9D4EDD;
-      border-radius: 6px;
-      color: #ffffff;
-      padding: 10px 14px;
-      font-size: 0.9rem;
-      outline: none;
-      text-align: center;
-      transition: border-color 0.2s ease, box-shadow 0.2s ease;
-    }
-    input[type="text"]::placeholder {
-      color: #555555;
-    }
-    input[type="text"]:focus, input[type="datetime-local"]:focus {
-      border-color: #00F0FF;
-      box-shadow: 0 0 8px rgba(0, 240, 255, 0.3);
-    }
-    
-    /* Invert calendar picker icon color from black to white */
-    input[type="datetime-local"]::-webkit-calendar-picker-indicator {
-      filter: invert(1);
-      cursor: pointer;
-    }
+<style>
+* {
+box-sizing: border-box;
+margin: 0;
+padding: 0;
+}
+body {
+background-color: #000000;
+color: #ffffff;
+font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+display: flex;
+justify-content: center;
+align-items: center;
+min-height: 100vh;
+overflow: hidden;
+padding: 10px;
+}
+#app {
+width: 100%;
+max-width: 480px;
+text-align: center;
+display: flex;
+flex-direction: column;
+justify-content: center;
+align-items: center;
+}
+.hidden {
+display: none !important;
+}
+#setup-form, #countdown-display, #final-message, #loading {
+animation: fadeIn 0.4s ease-in-out;
+width: 100%;
+display: flex;
+flex-direction: column;
+align-items: center;
+}
+@keyframes fadeIn {
+from { opacity: 0; transform: scale(0.98); }
+to { opacity: 1; transform: scale(1); }
+}
 
-    #save-btn {
-      background: linear-gradient(135deg, #9D4EDD, #00F0FF);
-      border: none;
-      border-radius: 6px;
-      color: #000000;
-      font-weight: 600;
-      padding: 10px 24px;
-      font-size: 0.9rem;
-      cursor: pointer;
-      margin-top: 8px;
-      transition: opacity 0.2s, transform 0.1s;
-    }
-    #save-btn:hover {
-      opacity: 0.9;
-    }
-    #save-btn:active {
-      transform: scale(0.97);
-    }
+/* Setup Form Styles */
+#setup-form h2 {
+font-size: 1.1rem;
+font-weight: 500;
+color: #9D4EDD;
+margin-bottom: 15px;
+letter-spacing: 0.5px;
+}
+.input-group {
+width: 100%;
+max-width: 300px;
+margin-bottom: 12px;
+}
+input[type="text"], input[type="datetime-local"] {
+width: 100%;
+background: #0a0a0a;
+border: 1px solid #9D4EDD;
+border-radius: 6px;
+color: #ffffff;
+padding: 10px 14px;
+font-size: 0.9rem;
+outline: none;
+text-align: center;
+transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+input[type="text"]::placeholder {
+color: #555555;
+}
+input[type="text"]:focus, input[type="datetime-local"]:focus {
+border-color: #00F0FF;
+box-shadow: 0 0 8px rgba(0, 240, 255, 0.3);
+}
 
-    /* Countdown Display Styles */
-    .header {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 10px;
-      margin-bottom: 18px;
-      width: 100%;
-    }
-    #display-name {
-      font-size: 1.15rem;
-      font-weight: 500;
-      color: #ffffff;
-      letter-spacing: 0.5px;
-      max-width: 80%;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-    .edit-btn {
-      background: none;
-      border: none;
-      color: #9D4EDD;
-      font-size: 1.05rem;
-      cursor: pointer;
-      transition: transform 0.2s ease, color 0.2s ease;
-      padding: 2px;
-      line-height: 1;
-    }
-    .edit-btn:hover {
-      color: #00F0FF;
-      transform: rotate(30deg);
-    }
-    .timer {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 12px;
-      margin-bottom: 16px;
-      width: 100%;
-    }
-    .time-block {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      min-width: 52px;
-    }
-    .number {
-      font-size: 2.3rem;
-      font-weight: 700;
-      color: #00F0FF;
-      text-shadow: 0 0 10px rgba(0, 240, 255, 0.45);
-      line-height: 1;
-    }
-    .separator {
-      font-size: 1.8rem;
-      font-weight: 700;
-      color: #9D4EDD;
-      margin-top: -12px;
-      user-select: none;
-    }
-    .label {
-      font-size: 0.55rem;
-      font-weight: 600;
-      color: #9D4EDD;
-      letter-spacing: 1.2px;
-      margin-top: 5px;
-    }
+/* Invert calendar picker icon color from black to white */
+input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+filter: invert(1);
+cursor: pointer;
+}
 
-    /* Visual Progress Bar */
-    .progress-container {
-      width: 100%;
-      max-width: 280px;
-      height: 4px;
-      background: #151515;
-      border-radius: 4px;
-      overflow: hidden;
-    }
-    #progress-bar {
-      height: 100%;
-      width: 0%;
-      background: linear-gradient(90deg, #9D4EDD, #00F0FF);
-      border-radius: 4px;
-      transition: width 1s linear;
-    }
+#save-btn {
+background: linear-gradient(135deg, #9D4EDD, #00F0FF);
+border: none;
+border-radius: 6px;
+color: #000000;
+font-weight: 600;
+padding: 10px 24px;
+font-size: 0.9rem;
+cursor: pointer;
+margin-top: 8px;
+transition: opacity 0.2s, transform 0.1s;
+}
+#save-btn:hover {
+opacity: 0.9;
+}
+#save-btn:active {
+transform: scale(0.97);
+}
 
-    /* Final Message Styles */
-    .gradient-text {
-      font-size: 1.45rem;
-      font-weight: 700;
-      background: linear-gradient(45deg, #00F0FF, #9D4EDD);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      animation: glowPulse 2s infinite alternate;
-      text-align: center;
-      margin-bottom: 15px;
-    }
-    @keyframes glowPulse {
-      0% { filter: drop-shadow(0 0 2px rgba(0, 240, 255, 0.2)); }
-      100% { filter: drop-shadow(0 0 10px rgba(157, 78, 221, 0.5)); }
-    }
+/* Countdown Display Styles */
+.header {
+display: flex;
+align-items: center;
+justify-content: center;
+gap: 10px;
+margin-bottom: 18px;
+width: 100%;
+}
+#display-name {
+font-size: 1.15rem;
+font-weight: 500;
+color: #ffffff;
+letter-spacing: 0.5px;
+max-width: 80%;
+white-space: nowrap;
+overflow: hidden;
+text-overflow: ellipsis;
+}
+.edit-btn {
+background: none;
+border: none;
+color: #9D4EDD;
+font-size: 1.05rem;
+cursor: pointer;
+transition: transform 0.2s ease, color 0.2s ease;
+padding: 2px;
+line-height: 1;
+}
+.edit-btn:hover {
+color: #00F0FF;
+transform: rotate(30deg);
+}
+.timer {
+display: flex;
+align-items: center;
+justify-content: center;
+gap: 12px;
+margin-bottom: 16px;
+width: 100%;
+}
+.time-block {
+display: flex;
+flex-direction: column;
+align-items: center;
+min-width: 52px;
+}
+.number {
+font-size: 2.3rem;
+font-weight: 700;
+color: #00F0FF;
+text-shadow: 0 0 10px rgba(0, 240, 255, 0.45);
+line-height: 1;
+}
+.separator {
+font-size: 1.8rem;
+font-weight: 700;
+color: #9D4EDD;
+margin-top: -12px;
+user-select: none;
+}
+.label {
+font-size: 0.55rem;
+font-weight: 600;
+color: #9D4EDD;
+letter-spacing: 1.2px;
+margin-top: 5px;
+}
 
-    /* Loading state */
-    #loading {
-      color: #9D4EDD;
-      font-size: 0.9rem;
-      letter-spacing: 1px;
-    }
-  </style>
+/* Visual Progress Bar */
+.progress-container {
+width: 100%;
+max-width: 280px;
+height: 4px;
+background: #151515;
+border-radius: 4px;
+overflow: hidden;
+}
+#progress-bar {
+height: 100%;
+width: 0%;
+background: linear-gradient(90deg, #9D4EDD, #00F0FF);
+border-radius: 4px;
+transition: width 1s linear;
+}
+
+/* Final Message Styles */
+.gradient-text {
+font-size: 1.45rem;
+font-weight: 700;
+background: linear-gradient(45deg, #00F0FF, #9D4EDD);
+-webkit-background-clip: text;
+-webkit-text-fill-color: transparent;
+animation: glowPulse 2s infinite alternate;
+text-align: center;
+margin-bottom: 15px;
+}
+@keyframes glowPulse {
+0% { filter: drop-shadow(0 0 2px rgba(0, 240, 255, 0.2)); }
+100% { filter: drop-shadow(0 0 10px rgba(157, 78, 221, 0.5)); }
+}
+
+/* Loading state */
+#loading {
+color: #9D4EDD;
+font-size: 0.9rem;
+letter-spacing: 1px;
+}
+</style>
 </head>
 <body>
-  <div id="app">
-    <!-- State: Loading -->
-    <div id="loading">Sincronizzazione...</div>
+<div id="app">
+<!-- State: Loading -->
+<div id="loading">Sincronizzazione...</div>
 
-    <!-- State: Setup Form -->
-    <div id="setup-form" class="hidden">
-      <h2>IMPOSTA DEADLINE</h2>
-      <div class="input-group">
-        <input type="text" id="event-name" placeholder="Es. Esame di Analisi Matematica" autocomplete="off" />
-      </div>
-      <div class="input-group">
-        <input type="datetime-local" id="event-date" />
-      </div>
-      <button id="save-btn">Avvia Countdown</button>
-    </div>
+<!-- State: Setup Form -->
+<div id="setup-form" class="hidden">
+<h2>IMPOSTA DEADLINE</h2>
+<div class="input-group">
+<input type="text" id="event-name" placeholder="Es. Esame di Analisi Matematica" autocomplete="off" />
+</div>
+<div class="input-group">
+<input type="datetime-local" id="event-date" />
+</div>
+<button id="save-btn">Avvia Countdown</button>
+</div>
 
-    <!-- State: Countdown Display -->
-    <div id="countdown-display" class="hidden">
-      <div class="header">
-        <span id="display-name">Caricamento...</span>
-        <button id="edit-btn" class="edit-btn" title="Modifica deadline">⚙️</button>
-      </div>
-      <div class="timer">
-        <div class="time-block">
-          <span id="days" class="number">00</span>
-          <span class="label">GIORNI</span>
-        </div>
-        <div class="separator">:</div>
-        <div class="time-block">
-          <span id="hours" class="number">00</span>
-          <span class="label">ORE</span>
-        </div>
-        <div class="separator">:</div>
-        <div class="time-block">
-          <span id="minutes" class="number">00</span>
-          <span class="label">MINUTI</span>
-        </div>
-        <div class="separator">:</div>
-        <div class="time-block">
-          <span id="seconds" class="number">00</span>
-          <span class="label">SECONDI</span>
-        </div>
-      </div>
-      <div class="progress-container">
-        <div id="progress-bar"></div>
-      </div>
-    </div>
+<!-- State: Countdown Display -->
+<div id="countdown-display" class="hidden">
+<div class="header">
+<span id="display-name">Caricamento...</span>
+<button id="edit-btn" class="edit-btn" title="Modifica deadline">⚙️</button>
+</div>
+<div class="timer">
+<div class="time-block">
+<span id="days" class="number">00</span>
+<span class="label">GIORNI</span>
+</div>
+<div class="separator">:</div>
+<div class="time-block">
+<span id="hours" class="number">00</span>
+<span class="label">ORE</span>
+</div>
+<div class="separator">:</div>
+<div class="time-block">
+<span id="minutes" class="number">00</span>
+<span class="label">MINUTI</span>
+</div>
+<div class="separator">:</div>
+<div class="time-block">
+<span id="seconds" class="number">00</span>
+<span class="label">SECONDI</span>
+</div>
+</div>
+<div class="progress-container">
+<div id="progress-bar"></div>
+</div>
+</div>
 
-    <!-- State: Final Message -->
-    <div id="final-message" class="hidden">
-      <h1 class="gradient-text">È il momento! In bocca al lupo!</h1>
-      <button id="reset-btn" class="edit-btn" title="Imposta nuova data">⚙️</button>
-    </div>
-  </div>
+<!-- State: Final Message -->
+<div id="final-message" class="hidden">
+<h1 class="gradient-text">È il momento! In bocca al lupo!</h1>
+<button id="reset-btn" class="edit-btn" title="Imposta nuova data">⚙️</button>
+</div>
+</div>
 
-  <script>
-    // Configurazione Firebase
-    const firebaseConfig = {
-      apiKey: "AIzaSyBXt2kDZD8ydWPRBSM9v5XK759Et0FjewY",
-      authDomain: "media-e-proiezione-laurea.firebaseapp.com",
-      databaseURL: "https://media-e-proiezione-laurea-default-rtdb.europe-west1.firebasedatabase.app",
-      projectId: "media-e-proiezione-laurea",
-      storageBucket: "media-e-proiezione-laurea.firebasestorage.app",
-      messagingSenderId: "887459538992",
-      appId: "1:887459538992:web:aede57f769957e500a25f5"
-    };
+<script>
+// Configurazione Firebase
+const firebaseConfig = {
+apiKey: "AIzaSyBXt2kDZD8ydWPRBSM9v5XK759Et0FjewY",
+authDomain: "media-e-proiezione-laurea.firebaseapp.com",
+databaseURL: "https://media-e-proiezione-laurea-default-rtdb.europe-west1.firebasedatabase.app",
+projectId: "media-e-proiezione-laurea",
+storageBucket: "media-e-proiezione-laurea.firebasestorage.app",
+messagingSenderId: "887459538992",
+appId: "1:887459538992:web:aede57f769957e500a25f5"
+};
 
-    // Inizializzazione Firebase
-    firebase.initializeApp(firebaseConfig);
-    const database = firebase.database();
-    
-    // Riferimento condiviso per sincronizzare lo stesso account su più dispositivi
-    const dbRef = database.ref("datiEsame");
+// Inizializzazione Firebase
+firebase.initializeApp(firebaseConfig);
+const database = firebase.database();
 
-    // Variabili dell'applicazione
-    let currentEventName = '';
-    let currentTargetDate = '';
-    let countdownInterval = null;
+// Riferimento ESCLUSIVO di questo widget (path dedicato, non più condiviso con altri widget)
+const dbRef = database.ref("timerEsame");
 
-    // Gestione visibilità sezioni
-    function showSection(id) {
-      document.getElementById('loading').classList.add('hidden');
-      document.getElementById('setup-form').classList.add('hidden');
-      document.getElementById('countdown-display').classList.add('hidden');
-      document.getElementById('final-message').classList.add('hidden');
-      document.getElementById(id).classList.remove('hidden');
-    }
+// Variabili dell'applicazione
+let currentEventName = '';
+let currentTargetDate = '';
+let countdownInterval = null;
 
-    // Lettura e sincronizzazione dati in tempo reale tra tutti i dispositivi
-    dbRef.on("value", (snapshot) => {
-      const data = snapshot.val();
-      if (data && data.eventName && data.targetDate) {
-        currentEventName = data.eventName;
-        currentTargetDate = data.targetDate;
-        startCountdown();
-      } else {
-        showSetupForm();
-      }
-    }, (error) => {
-      console.error("Errore di sincronizzazione:", error);
-      showSetupForm();
-    });
+// Gestione visibilità sezioni
+function showSection(id) {
+document.getElementById('loading').classList.add('hidden');
+document.getElementById('setup-form').classList.add('hidden');
+document.getElementById('countdown-display').classList.add('hidden');
+document.getElementById('final-message').classList.add('hidden');
+document.getElementById(id).classList.remove('hidden');
+}
 
-    // Scrittura dei dati su Firebase al salvataggio
-    document.getElementById('save-btn').addEventListener('click', () => {
-      const name = document.getElementById('event-name').value.trim();
-      const date = document.getElementById('event-date').value;
+// Lettura e sincronizzazione dati in tempo reale tra tutti i dispositivi
+dbRef.on("value", (snapshot) => {
+const data = snapshot.val();
+if (data && data.eventName && data.targetDate) {
+currentEventName = data.eventName;
+currentTargetDate = data.targetDate;
+startCountdown();
+} else {
+showSetupForm();
+}
+}, (error) => {
+console.error("Errore di sincronizzazione:", error);
+showSetupForm();
+});
 
-      if (!name || !date) {
-        alert("Inserisci un nome per l'evento e seleziona una data.");
-        return;
-      }
+// Scrittura dei dati su Firebase al salvataggio
+document.getElementById('save-btn').addEventListener('click', () => {
+const name = document.getElementById('event-name').value.trim();
+const date = document.getElementById('event-date').value;
 
-      dbRef.set({
-        eventName: name,
-        targetDate: date,
-        updatedAt: Date.now()
-      }).catch((err) => console.error("Salvataggio fallito:", err));
-    });
+if (!name || !date) {
+alert("Inserisci un nome per l'evento e seleziona una data.");
+return;
+}
 
-    // Gestione modifica dati
-    const handleEdit = () => {
-      document.getElementById('event-name').value = currentEventName;
-      document.getElementById('event-date').value = currentTargetDate;
-      if (countdownInterval) clearInterval(countdownInterval);
-      showSection('setup-form');
-    };
+dbRef.set({
+eventName: name,
+targetDate: date,
+updatedAt: Date.now()
+}).catch((err) => console.error("Salvataggio fallito:", err));
+});
 
-    document.getElementById('edit-btn').addEventListener('click', handleEdit);
-    document.getElementById('reset-btn').addEventListener('click', handleEdit);
+// Gestione modifica dati
+const handleEdit = () => {
+document.getElementById('event-name').value = currentEventName;
+document.getElementById('event-date').value = currentTargetDate;
+if (countdownInterval) clearInterval(countdownInterval);
+showSection('setup-form');
+};
 
-    function showSetupForm() {
-      if (countdownInterval) clearInterval(countdownInterval);
-      showSection('setup-form');
-    }
+document.getElementById('edit-btn').addEventListener('click', handleEdit);
+document.getElementById('reset-btn').addEventListener('click', handleEdit);
 
-    // Gestione ed esecuzione del timer countdown
-    function startCountdown() {
-      if (countdownInterval) clearInterval(countdownInterval);
-      showSection('countdown-display');
-      document.getElementById('display-name').textContent = currentEventName;
+function showSetupForm() {
+if (countdownInterval) clearInterval(countdownInterval);
+showSection('setup-form');
+}
 
-      const targetTime = new Date(currentTargetDate).getTime();
-      // Finestra temporale fissa di 90 giorni per la scala di progressione
-      const durationWindow = 90 * 24 * 60 * 60 * 1000; 
+// Gestione ed esecuzione del timer countdown
+function startCountdown() {
+if (countdownInterval) clearInterval(countdownInterval);
+showSection('countdown-display');
+document.getElementById('display-name').textContent = currentEventName;
 
-      function updateTimer() {
-        const now = Date.now();
-        const difference = targetTime - now;
+const targetTime = new Date(currentTargetDate).getTime();
+// Finestra temporale fissa di 90 giorni per la scala di progressione
+const durationWindow = 90 * 24 * 60 * 60 * 1000;
 
-        if (difference <= 0) {
-          clearInterval(countdownInterval);
-          showSection('final-message');
-          return;
-        }
+function updateTimer() {
+const now = Date.now();
+const difference = targetTime - now;
 
-        const days = Math.floor(difference / (1000 * 60 * 60 * 24));
-        const hours = Math.floor((difference % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-        const minutes = Math.floor((difference % (1000 * 60 * 60)) / (1000 * 60));
-        const seconds = Math.floor((difference % (1000 * 60)) / 1000);
+if (difference <= 0) {
+clearInterval(countdownInterval);
+showSection('final-message');
+return;
+}
 
-        document.getElementById('days').textContent = String(days).padStart(2, '0');
-        document.getElementById('hours').textContent = String(hours).padStart(2, '0');
-        document.getElementById('minutes').textContent = String(minutes).padStart(2, '0');
-        document.getElementById('seconds').textContent = String(seconds).padStart(2, '0');
+const days = Math.floor(difference / (1000 * 60 * 60 * 24));
+const hours = Math.floor((difference % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+const minutes = Math.floor((difference % (1000 * 60 * 60)) / (1000 * 60));
+const seconds = Math.floor((difference % (1000 * 60)) / 1000);
 
-        // Calcolo percentuale barra di avanzamento
-        let elapsed = durationWindow - difference;
-        let progressPercent = (elapsed / durationWindow) * 100;
-        progressPercent = Math.max(0, Math.min(100, progressPercent));
-        document.getElementById('progress-bar').style.width = `${progressPercent}%`;
-      }
+document.getElementById('days').textContent = String(days).padStart(2, '0');
+document.getElementById('hours').textContent = String(hours).padStart(2, '0');
+document.getElementById('minutes').textContent = String(minutes).padStart(2, '0');
+document.getElementById('seconds').textContent = String(seconds).padStart(2, '0');
 
-      updateTimer();
-      countdownInterval = setInterval(updateTimer, 1000);
-    }
-  </script>
+// Calcolo percentuale barra di avanzamento
+let elapsed = durationWindow - difference;
+let progressPercent = (elapsed / durationWindow) * 100;
+progressPercent = Math.max(0, Math.min(100, progressPercent));
+document.getElementById('progress-bar').style.width = `${progressPercent}%`;
+}
+
+updateTimer();
+countdownInterval = setInterval(updateTimer, 1000);
+}
+</script>
 </body>
 </html>
