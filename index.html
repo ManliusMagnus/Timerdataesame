@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Notion Deadline Countdown</title>
+  <style>
+    :root {
+      --cyan: #00F0FF;
+      --violet: #9D4EDD;
+      --text-main: #FFFFFF;
+      --text-muted: rgba(255, 255, 255, 0.6);
+      --input-bg: rgba(255, 255, 255, 0.08);
+      --input-border: rgba(255, 255, 255, 0.2);
+      --progress-bg: rgba(255, 255, 255, 0.15);
+      --shadow-glow: rgba(0, 240, 255, 0.4);
+    }
+
+    body {
+      background: #000000;
+      margin: 0;
+      padding: 12px;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      color: var(--text-main);
+      overflow: hidden;
+    }
+
+    #widget-container {
+      max-width: 320px;
+      margin: 0 auto;
+      box-sizing: border-box;
+      user-select: none;
+    }
+
+    .fade-in {
+      animation: fadeIn 0.3s ease-in-out forwards;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(3px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Setup Form Styling */
+    #setup-form {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .form-title {
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: var(--text-main);
+      margin: 0 0 4px 0;
+      text-align: center;
+      letter-spacing: -0.01em;
+    }
+
+    .input-group {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+
+    .input-group label {
+      font-size: 0.7rem;
+      color: var(--text-muted);
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+
+    .input-group input {
+      background: var(--input-bg);
+      border: 1px solid var(--input-border);
+      color: var(--text-main);
+      padding: 7px 10px;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      outline: none;
+      font-family: inherit;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    .input-group input:focus {
+      border-color: var(--violet);
+    }
+
+    .form-buttons {
+      display: flex;
+      gap: 8px;
+      margin-top: 4px;
+    }
+
+    .form-buttons button {
+      flex: 1;
+    }
+
+    #save-btn {
+      background: var(--violet);
+      color: #FFFFFF;
+      border: none;
+      padding: 8px;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity 0.2s, transform 0.1s;
+      font-family: inherit;
+    }
+
+    #save-btn:hover {
+      opacity: 0.9;
+    }
+
+    #save-btn:active {
+      transform: scale(0.98);
+    }
+
+    #cancel-btn {
+      background: transparent;
+      border: 1px solid var(--input-border);
+      color: var(--text-muted);
+      padding: 8px;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background-color 0.2s, color 0.2s;
+    }
+
+    #cancel-btn:hover {
+      background: var(--input-bg);
+      color: var(--text-main);
+    }
+
+    /* Countdown Styling */
+    .header-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 6px;
+    }
+
+    #display-title {
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: var(--text-main);
+      margin: 0;
+      max-width: 85%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      letter-spacing: -0.01em;
+    }
+
+    #edit-btn {
+      background: transparent;
+      border: none;
+      color: var(--violet);
+      cursor: pointer;
+      padding: 3px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 4px;
+      transition: background-color 0.2s, transform 0.2s;
+    }
+
+    #edit-btn:hover {
+      background: var(--input-bg);
+      transform: rotate(30deg);
+    }
+
+    #edit-btn svg {
+      width: 15px;
+      height: 15px;
+    }
+
+    .timer-grid {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin: 10px 0;
+    }
+
+    .timer-segment {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      flex: 1;
+    }
+
+    .number {
+      font-size: 2.1rem;
+      font-weight: 700;
+      color: var(--cyan);
+      text-shadow: 0 0 12px var(--shadow-glow);
+      font-variant-numeric: tabular-nums;
+      line-height: 1;
+    }
+
+    .colon {
+      color: var(--violet);
+      font-size: 1.6rem;
+      font-weight: 700;
+      line-height: 1;
+      margin-top: -12px;
+      width: 8px;
+      text-align: center;
+    }
+
+    .label {
+      font-size: 0.62rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-top: 5px;
+      font-weight: 500;
+    }
+
+    /* Progress Bar */
+    .progress-container {
+      width: 100%;
+      height: 4px;
+      background: var(--progress-bg);
+      border-radius: 2px;
+      margin-top: 14px;
+      overflow: hidden;
+    }
+
+    .progress-bar {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, var(--violet), var(--cyan));
+      border-radius: 2px;
+      transition: width 0.5s ease-out;
+    }
+
+    /* Final Message Styling */
+    #final-message {
+      text-align: center;
+      padding: 10px 0;
+    }
+
+    #final-title {
+      font-size: 0.95rem;
+      font-weight: 600;
+      margin: 0 0 6px 0;
+      color: var(--text-main);
+    }
+
+    .animated-text {
+      font-size: 1.25rem;
+      font-weight: 700;
+      background: linear-gradient(45deg, var(--cyan), var(--violet), var(--cyan));
+      background-size: 200% auto;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      animation: shine 3s linear infinite;
+      margin-bottom: 12px;
+    }
+
+    @keyframes shine {
+      to {
+        background-position: 200% center;
+      }
+    }
+
+    #reset-btn {
+      background: transparent;
+      border: 1px solid var(--input-border);
+      color: var(--text-muted);
+      padding: 5px 10px;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background-color 0.2s, color 0.2s;
+    }
+
+    #reset-btn:hover {
+      background: var(--input-bg);
+      color: var(--text-main);
+    }
+
+    .hidden {
+      display: none !important;
+    }
+  </style>
+</head>
+<body>
+
+  <div id="widget-container">
+    
+    <!-- Configurazione Widget -->
+    <div id="setup-form" class="fade-in hidden">
+      <h2 class="form-title">Nuovo Countdown</h2>
+      <div class="input-group">
+        <label for="event-name">Esame / Evento</label>
+        <input type="text" id="event-name" placeholder="Es. Analisi Matematica 1" autocomplete="off">
+      </div>
+      <div class="input-group">
+        <label for="event-date">Data e Ora Scadenza</label>
+        <input type="datetime-local" id="event-date">
+      </div>
+      <div class="form-buttons">
+        <button id="save-btn">Avvia</button>
+        <button id="cancel-btn" class="hidden">Annulla</button>
+      </div>
+    </div>
+
+    <!-- Visualizzazione Countdown -->
+    <div id="countdown-display" class="fade-in hidden">
+      <div class="header-row">
+        <h1 id="display-title">---</h1>
+        <button id="edit-btn" title="Modifica data">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="3"></circle>
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+          </svg>
+        </button>
+      </div>
+
+      <div class="timer-grid">
+        <div class="timer-segment">
+          <span class="number" id="val-days">00</span>
+          <span class="label">Giorni</span>
+        </div>
+        <span class="colon">:</span>
+        <div class="timer-segment">
+          <span class="number" id="val-hours">00</span>
+          <span class="label">Ore</span>
+        </div>
+        <span class="colon">:</span>
+        <div class="timer-segment">
+          <span class="number" id="val-minutes">00</span>
+          <span class="label">Minuti</span>
+        </div>
+        <span class="colon">:</span>
+        <div class="timer-segment">
+          <span class="number" id="val-seconds">00</span>
+          <span class="label">Secondi</span>
+        </div>
+      </div>
+
+      <div class="progress-container">
+        <div class="progress-bar" id="progress-bar"></div>
+      </div>
+    </div>
+
+    <!-- Schermata Finale -->
+    <div id="final-message" class="fade-in hidden">
+      <h1 id="final-title">---</h1>
+      <div class="animated-text">È il momento! In bocca al lupo!</div>
+      <button id="reset-btn">⚙️ Cambia esame</button>
+    </div>
+
+  </div>
+
+  <script>
+    let countdownInterval;
+
+    const setupForm = document.getElementById('setup-form');
+    const countdownDisplay = document.getElementById('countdown-display');
+    const finalMessage = document.getElementById('final-message');
+
+    const inputName = document.getElementById('event-name');
+    const inputDate = document.getElementById('event-date');
+    const saveBtn = document.getElementById('save-btn');
+    const cancelBtn = document.getElementById('cancel-btn');
+    const editBtn = document.getElementById('edit-btn');
+    const resetBtn = document.getElementById('reset-btn');
+
+    const displayTitle = document.getElementById('display-title');
+    const finalTitle = document.getElementById('final-title');
+    const progressBar = document.getElementById('progress-bar');
+
+    const valDays = document.getElementById('val-days');
+    const valHours = document.getElementById('val-hours');
+    const valMinutes = document.getElementById('val-minutes');
+    const valSeconds = document.getElementById('val-seconds');
+
+    function init() {
+      const savedName = localStorage.getItem('deadline_name');
+      const savedDate = localStorage.getItem('deadline_date');
+
+      if (savedName && savedDate) {
+        startCountdown(savedName, savedDate);
+      } else {
+        showForm(false);
+      }
+    }
+
+    function showForm(canCancel = false) {
+      setupForm.classList.remove('hidden');
+      countdownDisplay.classList.add('hidden');
+      finalMessage.classList.add('hidden');
+
+      const savedName = localStorage.getItem('deadline_name');
+      const savedDate = localStorage.getItem('deadline_date');
+
+      if (savedName) inputName.value = savedName;
+      if (savedDate) inputDate.value = savedDate;
+
+      if (canCancel && savedName && savedDate) {
+        cancelBtn.classList.remove('hidden');
+      } else {
+        cancelBtn.classList.add('hidden');
+      }
+    }
+
+    function startCountdown(name, dateStr) {
+      setupForm.classList.add('hidden');
+      finalMessage.classList.add('hidden');
+      countdownDisplay.classList.remove('hidden');
+
+      displayTitle.textContent = name;
+
+      const targetDate = new Date(dateStr).getTime();
+      const duration = 90 * 24 * 60 * 60 * 1000; // Semestre predefinito di 3 mesi
+      const startDate = targetDate - duration;
+
+      if (countdownInterval) clearInterval(countdownInterval);
+
+      function update() {
+        const now = Date.now();
+        const diff = targetDate - now;
+
+        if (diff <= 0) {
+          clearInterval(countdownInterval);
+          showFinalMessage(name);
+          return;
+        }
+
+        const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+        const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+        const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+
+        valDays.textContent = String(days).padStart(2, '0');
+        valHours.textContent = String(hours).padStart(2, '0');
+        valMinutes.textContent = String(minutes).padStart(2, '0');
+        valSeconds.textContent = String(seconds).padStart(2, '0');
+
+        const elapsed = now - startDate;
+        let pct = (elapsed / duration) * 100;
+        pct = Math.min(100, Math.max(0, pct));
+        progressBar.style.width = pct + '%';
+      }
+
+      update();
+      countdownInterval = setInterval(update, 1000);
+    }
+
+    function showFinalMessage(name) {
+      countdownDisplay.classList.add('hidden');
+      setupForm.classList.add('hidden');
+      finalMessage.classList.remove('hidden');
+      finalTitle.textContent = name;
+    }
+
+    saveBtn.addEventListener('click', () => {
+      const name = inputName.value.trim();
+      const date = inputDate.value;
+
+      if (!name || !date) return;
+
+      localStorage.setItem('deadline_name', name);
+      localStorage.setItem('deadline_date', date);
+
+      startCountdown(name, date);
+    });
+
+    cancelBtn.addEventListener('click', () => {
+      const savedName = localStorage.getItem('deadline_name');
+      const savedDate = localStorage.getItem('deadline_date');
+      if (savedName && savedDate) {
+        startCountdown(savedName, savedDate);
+      }
+    });
+
+    editBtn.addEventListener('click', () => {
+      showForm(true);
+    });
+
+    resetBtn.addEventListener('click', () => {
+      showForm(false);
+    });
+
+    init();
+  </script>
+</body>
+</html>
