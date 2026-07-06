@@ -8,36 +8,23 @@
     :root {
       --cyan: #00F0FF;
       --violet: #9D4EDD;
-      --text-main: #37352F;
-      --text-muted: rgba(55, 53, 47, 0.6);
-      --input-bg: rgba(15, 15, 15, 0.04);
-      --input-border: rgba(15, 15, 15, 0.12);
-      --progress-bg: rgba(15, 15, 15, 0.08);
-      --shadow-glow: rgba(0, 240, 255, 0.15);
-      --num-shadow: 0.5px 0.5px 1px rgba(0, 0, 0, 0.15);
-    }
-
-    @media (prefers-color-scheme: dark) {
-      :root {
-        --cyan: #00F0FF;
-        --violet: #9D4EDD;
-        --text-main: #FFFFFF;
-        --text-muted: rgba(255, 255, 255, 0.6);
-        --input-bg: rgba(255, 255, 255, 0.05);
-        --input-border: rgba(255, 255, 255, 0.15);
-        --progress-bg: rgba(255, 255, 255, 0.15);
-        --shadow-glow: rgba(0, 240, 255, 0.4);
-        --num-shadow: 0 0 12px var(--shadow-glow);
-      }
+      --text-main: #FFFFFF;
+      --text-muted: rgba(255, 255, 255, 0.6);
+      --input-bg: rgba(255, 255, 255, 0.05);
+      --input-border: rgba(255, 255, 255, 0.15);
+      --progress-bg: rgba(255, 255, 255, 0.15);
+      --shadow-glow: rgba(0, 240, 255, 0.4);
+      --num-shadow: 0 0 12px var(--shadow-glow);
     }
 
     body {
-      background: transparent;
+      background: #121212;
       margin: 0;
       padding: 12px;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
       color: var(--text-main);
       overflow: hidden;
+      border-radius: 8px;
     }
 
     #widget-container {
