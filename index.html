@@ -8,16 +8,31 @@
     :root {
       --cyan: #00F0FF;
       --violet: #9D4EDD;
-      --text-main: #FFFFFF;
-      --text-muted: rgba(255, 255, 255, 0.6);
-      --input-bg: rgba(255, 255, 255, 0.08);
-      --input-border: rgba(255, 255, 255, 0.2);
-      --progress-bg: rgba(255, 255, 255, 0.15);
-      --shadow-glow: rgba(0, 240, 255, 0.4);
+      --text-main: #37352F;
+      --text-muted: rgba(55, 53, 47, 0.6);
+      --input-bg: rgba(15, 15, 15, 0.04);
+      --input-border: rgba(15, 15, 15, 0.12);
+      --progress-bg: rgba(15, 15, 15, 0.08);
+      --shadow-glow: rgba(0, 240, 255, 0.15);
+      --num-shadow: 0.5px 0.5px 1px rgba(0, 0, 0, 0.15);
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --cyan: #00F0FF;
+        --violet: #9D4EDD;
+        --text-main: #FFFFFF;
+        --text-muted: rgba(255, 255, 255, 0.6);
+        --input-bg: rgba(255, 255, 255, 0.05);
+        --input-border: rgba(255, 255, 255, 0.15);
+        --progress-bg: rgba(255, 255, 255, 0.15);
+        --shadow-glow: rgba(0, 240, 255, 0.4);
+        --num-shadow: 0 0 12px var(--shadow-glow);
+      }
     }
 
     body {
-      background: #000000;
+      background: transparent;
       margin: 0;
       padding: 12px;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
@@ -197,7 +212,7 @@
       font-size: 2.1rem;
       font-weight: 700;
       color: var(--cyan);
-      text-shadow: 0 0 12px var(--shadow-glow);
+      text-shadow: var(--num-shadow);
       font-variant-numeric: tabular-nums;
       line-height: 1;
     }
@@ -361,12 +376,11 @@
   </div>
 
   <script type="module">
-    // Import dei moduli SDK di Firebase necessari
     import { initializeApp } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-app.js";
     import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-analytics.js";
     import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-database.js";
 
-    // Configurazione dell'app Firebase
+    // Configurazione Firebase fornita
     const firebaseConfig = {
       apiKey: "AIzaSyBXt2kDZD8ydWPRBSM9v5XK759Et0FjewY",
       authDomain: "media-e-proiezione-laurea.firebaseapp.com",
@@ -374,16 +388,16 @@
       projectId: "media-e-proiezione-laurea",
       storageBucket: "media-e-proiezione-laurea.firebasestorage.app",
       messagingSenderId: "887459538992",
-      appId: "1:887459538992:web:701a8a3c69e232ac0a25f5",
-      measurementId: "G-NL3G9DCY8F"
+      appId: "1:887459538992:web:1383bce43aef17130a25f5",
+      measurementId: "G-FH8C9H7G4W"
     };
 
-    // Inizializzazione di Firebase
+    // Inizializzazione SDK Firebase
     const app = initializeApp(firebaseConfig);
     const analytics = getAnalytics(app);
     const db = getDatabase(app);
 
-    // Riferimenti agli elementi della pagina
+    // Variabili DOM
     const setupForm = document.getElementById('setup-form');
     const countdownDisplay = document.getElementById('countdown-display');
     const finalMessage = document.getElementById('final-message');
@@ -408,14 +422,14 @@
     let currentDbData = null;
     let isEditing = false;
 
-    // Inizializzazione della sincronizzazione con il Database di Firebase
+    // Sincronizzazione Realtime Database
     function initFirebaseSync() {
       const datiEsameRef = ref(db, "datiEsame");
       
       onValue(datiEsameRef, (snapshot) => {
         currentDbData = snapshot.val();
         
-        // Se non stiamo modificando attivamente i dati nei campi input, aggiorna lo stato visivo
+        // Evita di interrompere l'utente se sta modificando l'evento corrente
         if (!isEditing) {
           if (currentDbData && currentDbData.name && currentDbData.date) {
             startCountdown(currentDbData.name, currentDbData.date);
@@ -456,7 +470,7 @@
       displayTitle.textContent = name;
 
       const targetDate = new Date(dateStr).getTime();
-      const duration = 90 * 24 * 60 * 60 * 1000; // Semestre predefinito di 3 mesi
+      const duration = 90 * 24 * 60 * 60 * 1000; // Imposta 3 mesi (90 giorni) come inizio semestre predefinito
       const startDate = targetDate - duration;
 
       if (countdownInterval) clearInterval(countdownInterval);
@@ -499,7 +513,7 @@
       finalTitle.textContent = name;
     }
 
-    // Salvataggio sul Database Online
+    // Event Listeners per Scrittura su Firebase
     saveBtn.addEventListener('click', () => {
       const name = inputName.value.trim();
       const date = inputDate.value;
@@ -512,7 +526,7 @@
       }).then(() => {
         isEditing = false;
       }).catch((error) => {
-        console.error("Errore di scrittura nel database:", error);
+        console.error("Errore di salvataggio nel DB:", error);
       });
     });
 
@@ -527,16 +541,15 @@
       showForm(true);
     });
 
-    // Reset dati sia locali che sul Database Online
     resetBtn.addEventListener('click', () => {
       set(ref(db, "datiEsame"), null).then(() => {
         showForm(false);
       }).catch((error) => {
-        console.error("Errore durante il reset del database:", error);
+        console.error("Errore di reset nel DB:", error);
       });
     });
 
-    // Avvia la sincronizzazione in tempo reale
+    // Inizializza la sincronizzazione realtime
     initFirebaseSync();
   </script>
 </body>
